@@ -1,0 +1,55 @@
+Mục tiêu chung của bài tập:
+
+Bài tập này yêu cầu bạn xây dựng một hệ thống quản lý bán hàng (phiên bản đơn giản) bằng cách áp dụng kiến trúc Microservices. Thay vì xây dựng một ứng dụng lớn duy nhất (Monolith), bạn sẽ chia nhỏ hệ thống thành các dịch vụ (services) nhỏ hơn, độc lập và có chức năng riêng biệt.
+
+Giải thích chi tiết các phần:
+
+Yêu cầu: Xây dựng các service như sau:
+
+Đây là phần định nghĩa các "khối" chức năng chính của hệ thống. Mỗi khối này sẽ được xây dựng thành một Microservice riêng biệt:
+
+Product Service: Chuyên quản lý mọi thứ liên quan đến sản phẩm (tạo, xem, sửa, xóa thông tin sản phẩm như tên, giá, mô tả, số lượng tồn kho...).
+
+Order Service: Chuyên quản lý các đơn hàng (tạo đơn hàng mới, xem chi tiết đơn hàng, hủy đơn hàng...).
+
+Customer Service: Chuyên quản lý thông tin khách hàng (tạo, xem, sửa, xóa thông tin khách hàng như tên, địa chỉ, thông tin liên lạc...).
+
+Ghi chú (more...in part 2): Cho thấy đây chỉ là phần 1 của bài tập, các phần sau có thể yêu cầu thêm các service khác (ví dụ: Payment Service - quản lý thanh toán, Shipping Service - quản lý giao hàng,...).
+
+Giao tiếp giữa các Microservices:
+
+Vì hệ thống bị chia nhỏ thành nhiều service, chúng cần có cách để "nói chuyện" với nhau. Phần này mô tả các phương thức giao tiếp được đề xuất:
+
+API Gateway: Đây là một service đặc biệt, đóng vai trò như "cổng chính" của toàn bộ hệ thống. Mọi yêu cầu từ bên ngoài (ví dụ: từ giao diện web/mobile của người dùng) sẽ đi qua API Gateway trước. Sau đó, API Gateway sẽ điều hướng yêu cầu đó đến đúng Microservice cần xử lý. Lợi ích: Giấu đi sự phức tạp của hệ thống bên trong, cung cấp một điểm truy cập duy nhất, có thể xử lý các tác vụ chung như xác thực, giới hạn truy cập (rate limiting)...
+
+REST API / gRPC: Đây là hai cách phổ biến để các Microservice giao tiếp trực tiếp với nhau một cách đồng bộ (synchronous - tức là service A gọi service B và phải chờ B trả lời). REST API dùng giao thức HTTP quen thuộc, dễ sử dụng. gRPC là một giao thức hiện đại hơn do Google phát triển, thường hiệu quả hơn về tốc độ và băng thông, phù hợp cho giao tiếp nội bộ giữa các service. Bài tập cho phép bạn chọn một trong hai hoặc cả hai.
+
+Message Broker (Kafka / RabbitMQ): Đây là cách giao tiếp bất đồng bộ (asynchronous - tức là service A gửi một "tin nhắn" đi và không cần chờ phản hồi ngay). Nó hoạt động như một "hộp thư trung gian". Service A gửi tin nhắn vào đó, Service B (hoặc nhiều service khác) sẽ nhận và xử lý tin nhắn đó khi sẵn sàng. Rất hữu ích khi:
+
+Không cần xử lý ngay lập tức.
+
+Một hành động cần thông báo cho nhiều service khác.
+
+Giảm sự phụ thuộc trực tiếp giữa các service (decoupling).
+
+Ví dụ được đưa ra: Khi Order Service tạo xong một đơn hàng, nó có thể gửi một tin nhắn (event) vào Message Broker. Shipping Service và Inventory Service (nếu có) có thể lắng nghe tin nhắn này để tự động cập nhật trạng thái giao hàng hoặc trừ kho.
+
+Các bước phát triển hệ thống:
+
+Phần này nêu ra các nguyên tắc và yêu cầu kỹ thuật cốt lõi khi xây dựng:
+
+Mỗi Microservice sẽ có cơ sở dữ liệu (CSDL) riêng biệt: Đây là nguyên tắc quan trọng "Database per Service". Thay vì dùng chung một CSDL lớn, mỗi service sẽ tự quản lý dữ liệu của mình trong CSDL riêng. Ví dụ: Product Service có CSDL riêng chỉ chứa thông tin sản phẩm, Order Service có CSDL riêng chỉ chứa thông tin đơn hàng. Lợi ích: Giúp các service thực sự độc lập (thay đổi CSDL của service này không ảnh hưởng service khác), dễ dàng chọn loại CSDL phù hợp cho từng service, dễ dàng scale (mở rộng) độc lập.
+
+Mỗi dịch vụ sẽ có các API để thực hiện các thao tác CRUD: Mỗi service cần cung cấp một giao diện (API) để các service khác hoặc API Gateway có thể tương tác. Các thao tác cơ bản thường là CRUD (Create - Tạo mới, Read - Đọc/Xem, Update - Cập nhật, Delete - Xóa). Ví dụ: Product Service phải có API để thêm sản phẩm mới (POST /products), lấy thông tin sản phẩm (GET /products/{id}), cập nhật (PUT /products/{id}), xóa (DELETE /products/{id}).
+
+Yêu cầu (kỹ thuật/công cụ):
+
+Phần này liệt kê các công cụ và yêu cầu cụ thể hơn cho việc triển khai:
+
+Containerization: Docker + Docker Compose: Yêu cầu bạn đóng gói mỗi Microservice vào một Docker container. Docker giúp đảm bảo môi trường chạy ứng dụng nhất quán ở mọi nơi. Docker Compose giúp bạn định nghĩa và chạy cùng lúc nhiều container (mỗi container cho một service, database, message broker...) một cách dễ dàng trên máy phát triển.
+
+Database: PostgreSQL hoặc MongoDB: Bạn được chọn một trong hai (hoặc có thể kết hợp) loại CSDL: PostgreSQL (hệ quản trị CSDL quan hệ) hoặc MongoDB (hệ quản trị CSDL NoSQL dạng document). Lựa chọn tùy thuộc vào cấu trúc dữ liệu và yêu cầu của từng service (mặc dù trong bài tập đơn giản có thể dùng chung một loại cho dễ).
+
+Vẽ sơ đồ việc gọi nhau giữa các services: Yêu cầu bạn phải tạo một bản vẽ (diagram) mô tả kiến trúc hệ thống, chỉ rõ các service, chúng giao tiếp với nhau như thế nào (qua API Gateway, gọi REST/gRPC trực tiếp, hay qua Message Broker).
+
+Tóm lại: Bài tập này là một bài thực hành cơ bản về Microservices, giúp bạn hiểu và áp dụng các khái niệm cốt lõi như: chia nhỏ chức năng thành các service độc lập, các kiểu giao tiếp giữa chúng (API Gateway, REST/gRPC, Message Broker), nguyên tắc "Database per Service", và sử dụng các công cụ hiện đại như Docker để đóng gói và quản lý. Bạn chưa cần code ngay mà cần hiểu rõ các yêu cầu và lên kế hoạch thiết kế trước.
